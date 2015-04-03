@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <title>flip-clock Demo</title>
+
+  <script src="../webcomponentsjs/webcomponents.min.js"></script>
+  <link rel="import" href="flip-clock.html">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #333;
+      background: #ccc;
+    }
+    a {
+      color: #333;
+    }
+    a:hover {
+      color: #ccc;
+      text-decoration: none;
+      background-color: #000;
+    }
+    h2 {
+      font-size: 34px;
+      margin: 30px 0 10px;
+    }
+    .wrapper {
+      width: 960px;
+      margin: 50px auto 0 auto;
+      text-align: center;
+    }
+    code {
+      display: inline-block;
+      margin: 0 0 20px 0;
+      font-family: monospace , serif;
+      border: 1px solid #ddd;
+      background-color: #f8f8f8;
+      border-radius: 3px;
+      padding: 2px 4px;
+      color: #333;
+    }
+    .center {
+      text-align: center;
+    }
+  </style>
+
+</head>
+<body unresolved>
+
+  <div class="wrapper">
+    <h2>Clock</h2>
+    <code>&lt;flip-clock&gt;&lt;/flip-clock&gt;</code>
+    <flip-clock></flip-clock>
+
+    <h2>Timer </h2>
+    <code>&lt;flip-clock displayMode=&quot;timer&quot; commandButtons=&quot;true&quot;&gt;&lt;/flip-clock&gt;</code>
+    <flip-clock displayMode="timer" commandButtons="true"></flip-clock>
+
+    <h2>Countdown </h2>
+    <code>&lt;flip-clock displayMode=&quot;countdown&quot; startFrom=&quot;20&quot; commandButtons=&quot;true&quot;&gt;&lt;/flip-clock&gt;</code>
+    <flip-clock displayMode="countdown" startFrom="20" commandButtons="true"></flip-clock>
+  </div>
+
+  <p class="center"><a href="https://github.com/Granze/flip-clock">Source code on Github</a> | Follow me on twitter <a href="https://twitter.com/granze">@granze</a></p>
+</body>
+</html>

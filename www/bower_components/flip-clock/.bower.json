@@ -1,0 +1,37 @@
+{
+  "name": "flip-clock",
+  "version": "0.0.2",
+  "keywords": [
+    "polymer",
+    "web-components"
+  ],
+  "main": "flip-clock.html",
+  "dependencies": {
+    "moment": "~2.8.3",
+    "polymer": "~0.5.1"
+  },
+  "homepage": "https://github.com/Granze/flip-clock",
+  "authors": [
+    "Maurizio Mangione <granzebru@gmail.com>"
+  ],
+  "description": "A flip clock, timer and countdown made with Polymer",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "../",
+    "test",
+    "tests"
+  ],
+  "_release": "0.0.2",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.0.2",
+    "commit": "6451571c50c99b9624a0e3a1017f64285e3aaf75"
+  },
+  "_source": "git://github.com/Granze/flip-clock.git",
+  "_target": "~0.0.2",
+  "_originalSource": "flip-clock",
+  "_direct": true
+}

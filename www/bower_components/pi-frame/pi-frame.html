@@ -1,0 +1,76 @@
+<link rel="import" href="../core-icon-button/core-icon-button.html">
+<link rel="import" href="../core-toolbar/core-toolbar.html">
+<link rel="import" href="../paper-tabs/paper-tabs.html">
+<link rel="import" href="../paper-tabs/paper-tab.html">
+<link rel="import" href="../core-animated-pages/core-animated-pages.html">
+<link rel="import" href="../core-animated-pages/transitions/hero-transition.html">
+<link rel="import" href="../core-animated-pages/transitions/cross-fade.html">
+<link rel="import" href="../core-animated-pages/transitions/slide-down.html">
+<link rel="import" href="../core-animated-pages/transitions/slide-up.html">
+<link rel="import" href="../core-animated-pages/transitions/tile-cascade.html">
+
+<polymer-element name="pi-frame">
+
+  <template>
+    <style>    
+      :host {
+        box-sizing: border-box;
+      }
+      #core_icon_button {
+        left: 1278px;
+        top: 10px;
+      }
+      #paper_tabs {
+        color: rgb(255, 255, 255);
+        box-shadow: rgba(0, 0, 0, 0.2) 0px 3px 2px;
+        left: 0px;
+        top: 80px;
+        background-color: rgba(0, 64, 0, 0.6);
+      }
+      #piframe-text {
+        text-align: center;
+      }
+      #core_toolbar {
+        opacity: 1;
+        background-color: rgb(132, 103, 60);
+      }
+      section {
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 64, 0, 0.298039);
+      }
+      core-animated-pages {
+        height: 100%;
+        width: 100%;
+      }
+      paper-tabs paper-tab::shadow #ink {
+        color: rgba(132, 103, 60, 0.498039);
+      }
+    </style>
+    <div id='core_toolbar'>
+      <div id="piframe-text" flex center>
+        <h3 id="h3">RPicFrame</h3>
+      </div>
+      <div class="bottom fit">
+        <paper-tabs scrollable selected="{{ page }}" selectedindex="2" id="paper_tabs" horizontal center layout>
+          <paper-tab id="paper_tab" inline flex center-center horizontal layout>Pictures</paper-tab>
+          <paper-tab id="paper_tab1" inline flex center-center horizontal layout>Camera</paper-tab>
+          <paper-tab id="paper_tab2" inline flex center-center horizontal layout active>Stuff n Things</paper-tab>
+        </paper-tabs>
+      </div>
+    </div>
+    <core-animated-pages transitions="" selected="{{ page }}" lastselected="1" selectedindex="2" notap id="core_animated_pages" >
+      <content>
+      </content>
+    </core-animated-pages>
+  </template>
+
+  <script>
+
+    Polymer({
+      page: 0
+    });
+
+  </script>
+
+</polymer-element>

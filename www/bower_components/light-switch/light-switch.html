@@ -1,0 +1,169 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<polymer-element name="light-switch" attributes="value desc id">
+   <template>
+    <style>
+		* {
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			box-sizing: border-box;
+			padding: 0;
+			margin: 0;
+		}
+		.switch {
+			margin: 5px;
+			display:inline-block;
+			/*position: relative;*/
+			width: 100%;
+			height: 100%;
+			position: relative;
+			display: block;
+			width: 50px;
+			height: 100px;
+
+		}
+
+		.button {
+		  top: 0; 
+		  right: 0; 
+		  bottom: 0; 
+		  left: 0;
+		  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+		  filter: alpha(opacity=0);
+		  -moz-opacity: 0;
+		  opacity: 1;
+		  z-index: 100;
+		  position: absolute;
+		  width: 100%;
+		  height: 100%;
+		  cursor: pointer;
+		}
+
+		.buttons {
+		  background: #cbc7bc;
+		  margin: 0 auto;
+		  border-radius: 5px;
+		  box-shadow:
+			  inset 0 1px 0 white,
+			  0 0 0 1px #999,
+			  0 0 5px 1px rgba(0,0,0,0.2),
+			  0 2px 0 rgba(255,255,255,0.6),
+			  inset 0 10px 1px #e5e5e5,
+			  inset 0 11px 0 rgba(255,255,255,0.5),
+			  inset 0 -45px 3px #ddd;
+		}
+
+		.switch{
+		  display:inline-block;
+		  background: #ccc;
+		  background: -moz-linear-gradient(#ddd, #bbb);
+		  background: -ms-linear-gradient(#ddd, #bbb);
+		  background: -o-linear-gradient(#ddd, #bbb);
+		  background: -webkit-gradient(linear, 0 0, 0 100%, from(#ddd), to(#bbb));
+		  background: -webkit-linear-gradient(#ddd, #bbb);
+		  background: linear-gradient(#ddd, #bbb);
+		  border-radius: 5px;
+		  border: 1px solid #bbb;
+		  box-shadow:
+			  0 0 5px 1px rgba(0,0,0,0.15),
+			  0 3px 3px rgba(0,0,0,0.3),
+			  inset 0 1px 0 rgba(255,255,255,0.5);
+		  width:100px;
+		  height:150px;
+		  padding:25px
+		}
+
+		.switch .label:after {
+		  content: "";
+		  position: absolute;
+		  width: 8px;
+		  height: 8px;
+		  background: #666;
+		  bottom: -13px;
+		  left: 20px;
+		  border-radius: 50%;
+		  opcacity:.8;
+		}
+		 .switch .label:before {
+		  content: "";
+		  position: absolute;
+		  width: 8px;
+		  height: 8px;
+		  background: #666;
+		  top: -13px;
+		  left: 20px;
+		  border-radius: 50%;
+		  z-index:10;
+		  opacity:.3;
+		}
+		.switch.on{
+			
+			/*box-shadow: 0 0 8px 0px rgba(255,255,0,0.5);
+			border: 4px solid #ddd;*/
+		}
+
+
+		.buttons.on{
+		  background: #d2cbc3;
+		  box-shadow:
+			  inset 0 1px 0 white,
+			  0 0 0 1px #999,
+			  0 0 5px 1px rgba(0,0,0,0.2),
+			  inset 0 -10px 0 #aaa,
+			  0 2px 0 rgba(255,255,255,0.1),
+			  inset 0 45px 3px #e0e0E0,
+			  0 8px 6px rgba(0,0,0,0.18);
+		}
+		.buttontext{
+		  text-align:center;
+		  font-size:large;
+		  font-weight:bolder;
+		  width:100%;
+		  height:50px;
+		  padding-top:15px;
+		  cursor:pointer;
+		}
+		.label.on{
+			box-shadow: 0 0 50px 30px rgba(255,255,0,0.25);
+			moz-box-shadow: 0 0 50px 30px rgba(255,255,0,0.25);
+			-webkit-box-shadow:0 0 50px 30px rgba(255,255,0,0.25);
+		}
+  </style>
+    <div class="switch {{status}}">
+      <div style='position:absolute;top:2px;left:0px;text-align:center;width:100%;font-weight:bold;z-index:11'>{{desc}}</div>
+      
+       <div class='label button {{status}}' style='margin:auto;width:50px;position:relative;margin:0 auto;height:auto'>
+        <div class='buttons {{status}}'>
+        <div class='buttontext' on-tap={{on_click}}  style='top:15px;opacity:{{onStyle}};'>ON</div>
+        <div class='buttontext' on-tap={{off_click}} style='bottom:15px;opacity:{{offStyle}}'>OFF</div>
+       </div>
+      </div>
+    </div>
+  </template>
+  <script>
+    Polymer('light-switch',{
+	  ws:null,
+      status:'off',
+      value:false,
+      onStyle:'0',
+      offStyle:'100',
+      colorOnSwitch:'dim',
+      ready:function(){
+        this.status=this.value?'on':'off';
+        this.onStyle=this.value?'1':'.2';        
+        this.offStyle=this.value?'.2':'1';
+      },
+      valueChanged:function(){
+      	this.status=this.value?'on':'off';
+        this.onStyle=this.value?'1':'.2';
+        this.offStyle=this.value?'.2':'1';
+      },
+      off_click:function(event, detail, sender){
+        this.fire('switch',{id:this.id,cmd:false});
+		},
+       on_click:function(event, detail, sender){
+        this.fire('switch',{id:this.id,cmd:true});
+    	}
+    });
+  </script>
+</polymer-element>
