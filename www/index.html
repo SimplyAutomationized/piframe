@@ -7,10 +7,7 @@
 		<link rel="import" href="bower_components/polymer/polymer.html">
 		<script src="bower_components/webcomponentsjs/webcomponents.js"></script> 
 		<script src='bower_components/jquery/dist/jquery.js'></script>
-		<script src="jquery.lazyload.js" type="text/javascript"></script>
 		<script src='freewall.js'></script>
-		<script src='hammer.min.js'></script>
-		<script src='jquery.hammer.js'></script>
 		<link href="bower_components/paper-button/paper-button.html" rel="import">
 		<link href="bower_components/flip-clock/flip-clock.html" rel="import">
 		<link href="bower_components/core-toolbar/core-toolbar.html" rel="import">
@@ -18,7 +15,7 @@
 		<link href="bower_components/paper-input/paper-input.html" rel="import">
 		<link href="bower_components/paper-dialog/paper-action-dialog.html" rel="import">
 		<link href="bower_components/core-animated-pages/core-animated-pages.html" rel="import">
-		<link href="bower_components/core-header-panel/core-header-panel.html" rel="import">
+		<link href="bower_components/core-scroll-header-panel/core-scroll-header-panel.html" rel="import">
 		<link href="bower_components/paper-tabs/paper-tabs.html" rel="import">
 		<link href="bower_components/paper-dropdown/paper-dropdown.html" rel="import">
 		<link href="bower_components/paper-item/paper-item.html" rel="import">
@@ -128,7 +125,14 @@
 				background-color: black;
 				cursor:pointer;
 			}
-			
+			 core-scroll-header-panel {
+				  position: absolute;
+				  top: 0;
+				  right: 0;
+				  bottom: 0;
+				  left: 0;
+				  background-color: black;
+			}
 		</style>
 		<script type="text/javascript">
 			var wall;
@@ -142,8 +146,7 @@
 					'<paper-item data-cmd="remove" data-value="{img}">Remove</paper-item>'+
 				  '</core-menu>'+
 				'</paper-dropdown>'+
-			'</div>';
-			
+			'</div>';			
 	</script>
 	</head>
 	<body fullbleed vertical layout unresolved class='unselectable'>
@@ -157,19 +160,22 @@
 				<div id='roomTemp'></div>
 			</div>
 		</div>
-	<div id="all"  flex layout vertical >
-		<div style='position:fixed;top:0;width:100%;height:50px;'></div>
+		<div  flex layout horizontal style="position:fixed; top:0px;left:0px;width:100%;background-color: rgba(206,190,157,1.5);z-index: 9998; color:black">
+			<span style='font-size:xx-large;' flex>RPicFrame</span>
+			<paper-icon-button id='config' icon="settings"></paper-icon-button>
+		</div>
+	<div id="all"  flex layout vertical style='margin-top:50px;' >
 			<div class='freewall' flex layout style='height:100%;width:100%'>
-			
 			</div>
 			<div id="therest" flex layout></div>
-		</div>
+	</div>
 	<script>
 		//globals
 			var lightswitches,wsServerInput,wsServerInputType,socketServers,websocket=[],myws,reader,filez=[],base64data,gauge,firstLoad=true,numofImages=0;
 			function hidescreensaver(me){
 				$(me).fadeOut();
 				$('#placeholder').css("opacity",0);
+				$('.freewall').fadeIn(200);
 				
 			};
 			img = new Image();
@@ -210,7 +216,9 @@
 				webSocket['type']='picframe';
 				myws = webSocket;
 				webSocket.onopen = function(e){
-					if(myws['type']=='picframe' && firstLoad){
+					isLocal=window.location.href.indexOf("?local")>-1;
+
+					if(myws['type']=='picframe' && firstLoad && !isLocal){
 						myws.send(JSON.stringify({"cmd":'getConfig'}));
 						setTimeout(function(){myws.send(JSON.stringify({"cmd":'getImages'}))},5000);
 						firstLoad=false;
@@ -224,11 +232,21 @@
 					setTimeout("connect2ws()",5000);
 				}
 			}
+			function config(configuration){
+				if(configuration.showclock=="true")
+					$('flip-clock').show();
+				else
+					$('flip-clock').hide();
+				if(configuration.showtemp=="true")
+					$('#roomTemp').show();
+				else
+					$('#roomTemp').hide();			
+			}
 			function parseData(d,type,ws){
 				var data;
 				
 				if ((d instanceof Blob)==false)
-					datas=JSON.parse(d);
+					data=JSON.parse(d);
 				if(type=='picframe'){
 					if(d instanceof Blob){
 						var reader = new window.FileReader();
@@ -241,7 +259,6 @@
 					else{
 						if(data.imageUpdate){
 							stuff = $('img[data-oldname$="'+data.oldname+'"]')[0];
-							
 							$(stuff).parent().find('[data-value$="'+data.oldname+'"]').attr('data-value',data.imageUpdate);
 							$(stuff).parent().find('[data-img$="'+data.oldname+'"]').attr('data-img',data.imageUpdate);
 							$(stuff).load(function(){
@@ -260,6 +277,10 @@
 							img.src=data.img
 						if(data.refresh)
 							location.reload();
+						if(data.config){
+							config(data.config)
+							window.localStorage.setItem('config',JSON.stringify(data.config));
+						}
 						if(data.images){
 							numofImages=data.images.length;
 							for (imag of data.images){
@@ -317,7 +338,7 @@
 						$('#screensaver').fadeIn(500);
 						$('#placeholder').css('opacity',1);
 						$('#screensaver').show();
-						
+						$('.freewall').fadeOut();
 					}
 			}
 			
@@ -337,6 +358,9 @@
 										wall.fitWidth();
 									}
 					});
+					$('.freewall').fadeOut();
+					if(window.localStorage.config)
+						config(JSON.parse(window.localStorage.config));
 			});
 			
 		</script>

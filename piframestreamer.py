@@ -41,8 +41,10 @@ class frameconfig():
 		file.write(config)
 		file.close()
 	def changeKey(self,key,newval):
-		file = open(self.dir,'r+')
+		file = open(self.dir,'r')
 		jsondata = json.loads(file.read())
+		file.close
+		file =  open(self.dir,'w')
 		jsondata[key]=newval
 		file.write(json.dumps(jsondata))
 		file.close()
@@ -75,10 +77,10 @@ def addtolist(file, extensions=['.png', '.jpg', '.jpeg', '.gif', '.bmp']):
     e = ext.lower()
     # Only add common image types to the list.
     if e in extensions:
-        #print 'Adding to list: ', file
-        if (file not in file_list):
-            file_list.append(file.replace('/home/pi/piframe/www/',''))
-            #print 'Adding to list: ', file.replace('/home/pi/piframe/www/','')
+        parsedFile=file.replace('/home/pi/piframe/www/','')
+        if (parsedFile not in file_list):
+            file_list.append(parsedFile)
+            #print 'Adding to list: ', parsedFile
     else:
         print 'Skipping: ', file, ' (NOT a supported image)'
 def rotateimage(img,deg,makeThumb=True):
@@ -111,20 +113,33 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 					oldname = cmd["img"]
 					cmd["img"]=cmd["img"].split('?')[0] 
 				if(cmd["cmd"]=="getImages"):
+					print 'getting images'
 					self.sendMessage(json.dumps({"images":[w.replace('pics/','thumb/').replace('.','_thumb.') for w in file_list]}));
+					print 'sent images'
 				if(cmd["cmd"]=="getCurrentImage"):
 					self.sendMessage(json.dumps({"currentImg":current_img}))
 				if(cmd["cmd"]=="setCurrentImage"):
 					current_img=cmd["value"].replace('_thumb','').replace('thumb/','pics/')
 					self.factory.picChange(current_img)
+				if(cmd["cmd"]=="remove"):
+					img2remove=cmd["img"].replace('_thumb','').replace('thumb/',startdir)
+					thumb2remove = startdir.replace('pics','')+cmd["img"];
+					os.remove(img2remove)
+					os.remove(thumb2remove)
+					self.sendMessage(json.dumps({"imageRemoved:'"+oldname+"'"}))
 				if(cmd["cmd"]=="rotateImage"):
 					img = cmd["img"].replace('_thumb','').replace('thumb/',startdir)
 					thumb = startdir.replace('pics','')+cmd["img"];
 					newfilename,ext=rotateimage(img,int(cmd["value"])).split('.')
 					self.sendMessage(json.dumps({"imageUpdate":'thumb/'+newfilename+"_thumb."+ext,"oldname":oldname}))
-				if(cmd["cmd"]=="config"):
-					 self.factory.frameconfig.changeKey(cmd['change'].keys()[0],cmd['change'].values()[0])
-					 self.factory.sendNewConfig()
+				if(cmd["cmd"]=="setConfig"):
+					self.factory.frameconfig.changeKey(cmd['change'].keys()[0],cmd['change'].values()[0])
+					self.factory.sendNewConfig(self)
+					self.factory.callID.cancel()#cancel any async calls for the picture frame ticks
+					self.factory.timeout = json.loads(self.frameconfig.getConfigJSON())["transitiontime"]
+					self.factory.tick()
+				if(cmd["cmd"]=="getConfig"):
+					self.factory.sendNewConfig(self)
             if (cmd.has_key("upload")):
                 imgstring = cmd["upload"]
                 appendage = str(time.time()).replace('.', '')
@@ -148,73 +163,74 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 
 
 class BroadcastServerFactory(WebSocketServerFactory):
-    def __init__(self, url, debug=False, debugCodePaths=False):
-        WebSocketServerFactory.__init__(self, url, debug=debug, debugCodePaths=debugCodePaths)
-        global clients,picframeclients,current_img
-        self.current_img=current_img
-        self.frameconfig = frameconfig(configdir)
-        config = json.loads(self.frameconfig.getConfigJSON())
-        self.picframeclients=picframeclients
-        self.clients = clients
-        self.timeout = config['transitiontime']
-        self.tempProbe = TempProbe(self.broadcast)
-        self.tempProbe.start()
-        self.tick()
+	def __init__(self, url, debug=False, debugCodePaths=False):
+		WebSocketServerFactory.__init__(self, url, debug=debug, debugCodePaths=debugCodePaths)
+		global clients,picframeclients,current_img
+		self.current_img=current_img
+		self.frameconfig = frameconfig(configdir)
+		config = json.loads(self.frameconfig.getConfigJSON())
+		self.picframeclients=picframeclients
+		self.clients = clients
+		self.timeout = config['transitiontime']
+		self.tempProbe = TempProbe(self.broadcast)
+		self.tempProbe.start()
+		self.callID=None
+		self.tick()
 	def stopProbe():
 		self.tempProbe.setEnabled(False)
-    def tick(self):
-        # check directory for new files
-        self.picChange(self.current_img)
-        reactor.callLater(self.timeout, self.tick)
+	def tick(self):
+		# check directory for new files
+		self.getRandomPic()
+		self.picChange(self.current_img)
+		self.callID=reactor.callLater(self.timeout, self.tick)
 	def getRandomPic(self):
 		walktree(startdir, addtolist)
-        # grab random image from array
-        num_files = len(file_list)
-        current = random.randint(1, num_files) - 1
-        self.current_img=file_list[current]
-    def register(self, client):
-	    # print client.__dict__
-        global localclient
-        peer = client.peer
-        client.showcamera=False
-        client.sendMessage(json.dumps({'temperature':self.tempProbe.getCurrentTemp()}))
-        if (client.http_request_uri == "/?picframe"):
-            self.picframeclients.append(client)
-            client.sendMessage(json.dumps({'img':self.current_img}))
-            #self.sendNewConfig(client)
-        else:
-            if not client in self.clients:
-                print("registered client {}".format(client.peer))
-                self.clients.append(client)
+		# grab random image from array
+		num_files = len(file_list)
+		print num_files
+		current = random.randint(1, num_files) - 1
+		self.current_img=file_list[current]
+	def register(self, client):
+		peer = client.peer
+		client.showcamera=False
+		client.sendMessage(json.dumps({'temperature':self.tempProbe.getCurrentTemp()}))
+		if (client.http_request_uri == "/?picframe"):
+			print peer
+			self.picframeclients.append(client)
+			client.sendMessage(json.dumps({'img':self.current_img}))
+		else:
+			if not client in self.clients:
+				print("registered client {}".format(client.peer))
+				self.clients.append(client)
 
-    def unregister(self, client):
+	def unregister(self, client):
 		if client in self.clients:
 			print("unregistered client {}".format(client.peer))
 			self.clients.remove(client)
 		elif client in self.picframeclients:
 			print("unregistered picframe client ",client.peer)
 			self.picframeclients.remove(client)
-    def picChange(self, img):
-        #print localclient, img
-        if (len(self.picframeclients)>0):
+	def picChange(self, img):
+		if (len(self.picframeclients)>0):
 			for c in self.picframeclients:
 				print 'sending to: ',c.peer
 				c.sendMessage(json.dumps({'img':img}),isBinary=False)
-    def broadcast(self, msg, forclient=None):
-        for c in self.clients:
-            if (forclient != None):
-                c.sendMessage(msg)
-            elif (c.http_request_uri == forclient):
-                c.sendMessage(msg)                
-        for b in self.picframeclients:
+	def broadcast(self, msg, forclient=None):
+		for c in self.clients:
+			if (forclient != None):
+				c.sendMessage(msg)
+			elif (c.http_request_uri == forclient):
+				c.sendMessage(msg)                
+		for b in self.picframeclients:
 				b.sendMessage(msg)
 				
-            # print("message sent to {}".format(c.peer))
-    def sendNewConfig(self,client):
-		#client.sendMessage(json.dumps({'config','stuff'}))
-		pass
-		#print json.loads(self.frameconfig.getConfigJSON())
-		#b.sendMessage(,isBinary=False)
+			# print("message sent to {}".format(c.peer))
+	def sendNewConfig(self,client,all=False):
+		if not all:
+			client.sendMessage(json.dumps({"config":json.loads(self.frameconfig.getConfigJSON())}),isBinary=False)
+		else:
+			for c in self.picframesclients:
+				c.sendMessage(json.dumps({"config":json.loads(self.frameconfig.getConfigJSON())}),isBinary=False)
 		
 
 if __name__ == '__main__':

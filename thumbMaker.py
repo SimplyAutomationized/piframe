@@ -1,5 +1,5 @@
 import cuter as cut
-import os,stat,sys
+import os,stat,sys,shutil as c
 
 file_list=[]
 def walktree(top, callback):
@@ -34,4 +34,15 @@ if __name__ == '__main__':
 		thumbdir=sys.argv[2]
 		for file in file_list:
 			filename,ext = file.replace(sys.argv[1],'').split('.')
-			cut.resize_and_crop(file,thumbdir+'/'+filename+'_thumb.'+ext,[320, 240])
+			thumbfilename=thumbdir+'/'+filename+'_thumb.'+ext
+			#check if file exists already and create it otherwise
+			if(not os.path.isfile(thumbfilename)):
+				if(ext!='gif'):
+					cut.resize_and_crop(file,thumbfilename,[320, 240])
+					print thumbfilename
+				else:
+					#since pillow can't resize gif too well we just copy it over
+					c.copyfile(file,thumbfilename)
+					print thumbfilename
+			else:
+				print 'file exists skipping',thumbfilename
