@@ -36,7 +36,7 @@ class frameconfig():
 		file.close()
 		return jsondata
 	def createConfigJSON(self):
-		config = json.dumps({'showclock':'true','showtemp':'true','transitiontime':60})
+		config = json.dumps({'showclock':'true','showtemp':'true','transitiontime':60,'rotation':0})
 		file = open(self.dir,'w+')
 		file.write(config)
 		file.close()
@@ -45,9 +45,10 @@ class frameconfig():
 		jsondata = json.loads(file.read())
 		file.close
 		file =  open(self.dir,'w')
-		jsondata[key]=newval
-		file.write(json.dumps(jsondata))
-		file.close()
+		if(jsondata.has_key(key)):
+			jsondata[key]=newval
+			file.write(json.dumps(jsondata))
+			file.close()
 	def configExist(self):
 		return (path.isfile(self.dir))
 
@@ -111,7 +112,9 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
             if (cmd.has_key("cmd")):
 				if(cmd.has_key("img")):#grab actual filename if json time was appended
 					oldname = cmd["img"]
-					cmd["img"]=cmd["img"].split('?')[0] 
+					cmd["img"]=cmd["img"].split('?')[0]
+				if(cmd["cmd"]=="refresh"):
+					self.factory.broadcast(json.dumps({"refresh":"true"}))
 				if(cmd["cmd"]=="getImages"):
 					print 'getting images'
 					self.sendMessage(json.dumps({"images":[w.replace('pics/','thumb/').replace('.','_thumb.') for w in file_list]}));
@@ -126,7 +129,11 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 					thumb2remove = startdir.replace('pics','')+cmd["img"];
 					os.remove(img2remove)
 					os.remove(thumb2remove)
-					self.sendMessage(json.dumps({"imageRemoved:'"+oldname+"'"}))
+					img2remove=oldname.replace('_thumb','').replace('thumb/','pics/')
+					if(img2remove in file_list):
+						file_list.remove(img2remove)
+						print 'image removed',img2remove
+					self.sendMessage(json.dumps({"imageRemoved":oldname}))
 				if(cmd["cmd"]=="rotateImage"):
 					img = cmd["img"].replace('_thumb','').replace('thumb/',startdir)
 					thumb = startdir.replace('pics','')+cmd["img"];
@@ -134,9 +141,8 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
 					self.sendMessage(json.dumps({"imageUpdate":'thumb/'+newfilename+"_thumb."+ext,"oldname":oldname}))
 				if(cmd["cmd"]=="setConfig"):
 					self.factory.frameconfig.changeKey(cmd['change'].keys()[0],cmd['change'].values()[0])
-					self.factory.sendNewConfig(self)
+					self.factory.sendNewConfig(self,all=True)
 					self.factory.callID.cancel()#cancel any async calls for the picture frame ticks
-					self.factory.timeout = json.loads(self.frameconfig.getConfigJSON())["transitiontime"]
 					self.factory.tick()
 				if(cmd["cmd"]=="getConfig"):
 					self.factory.sendNewConfig(self)
@@ -153,10 +159,15 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
                     fh.write(imgstring.decode('base64'))
                     fh.close()
                 #create original
-                fh = open("/home/pi/piframe/www/thumb/" + appendage+ '.'+cmd['file_type'], "wb")
+                fh = open("/home/pi/piframe/www/pics/" + appendage+ '.'+cmd['file_type'], "wb")
                 fh.write(imgstring.decode('base64'))
                 fh.close()
+				#change owner
                 os.system('chown pi /home/pi/piframe/www/thumb/' + appendage + '_thumb.'+cmd['file_type']);
+                os.system('chown pi /home/pi/piframe/www/pics/' + appendage + '.'+cmd['file_type']);
+                file_list.append('pics/' + appendage + '.'+cmd['file_type']);
+                self.factory.broadcast(json.dumps({"newImage":"thumb/" + appendage + '_thumb.'+cmd['file_type']}));
+				
     def connectionLost(self, reason):
         WebSocketServerProtocol.connectionLost(self, reason)
         self.factory.unregister(self)
@@ -180,6 +191,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
 		self.tempProbe.setEnabled(False)
 	def tick(self):
 		# check directory for new files
+		self.timeout = json.loads(self.frameconfig.getConfigJSON())["transitiontime"]
 		self.getRandomPic()
 		self.picChange(self.current_img)
 		self.callID=reactor.callLater(self.timeout, self.tick)
@@ -229,7 +241,7 @@ class BroadcastServerFactory(WebSocketServerFactory):
 		if not all:
 			client.sendMessage(json.dumps({"config":json.loads(self.frameconfig.getConfigJSON())}),isBinary=False)
 		else:
-			for c in self.picframesclients:
+			for c in self.picframeclients:
 				c.sendMessage(json.dumps({"config":json.loads(self.frameconfig.getConfigJSON())}),isBinary=False)
 		
 
