@@ -3,6 +3,7 @@ from os import path
 from piUtils import *
 import sys, json, os, stat, base64
 import sys, random, time
+import MMA7455 as tilt
 from StringIO import StringIO
 from time import strftime, sleep
 from time import sleep
@@ -30,13 +31,21 @@ class frameconfig():
 		if not self.configExist():
 			self.createConfigJSON()
 	def getConfigJSON(self):
-		print self.dir
-		file = open(self.dir,'r')
-		jsondata = file.read()
-		file.close()
-		return jsondata
+		try:
+			print self.dir
+			file = open(self.dir,'r')
+			jsondata = file.read()
+			file.close()
+			return jsondata
+		except:
+			self.createConfigJSON()
+			print self.dir
+			file = open(self.dir,'r')
+			jsondata = file.read()
+			file.close()
+			return jsondata
 	def createConfigJSON(self):
-		config = json.dumps({'showclock':'true','showtemp':'true','transitiontime':60,'rotation':0})
+		config = json.dumps({'showclock':1,'showtemp':1,'transitiontime':60,'rotation':0, 'tiltsensor': 1})
 		file = open(self.dir,'w+')
 		file.write(config)
 		file.close()
@@ -98,6 +107,7 @@ def rotateimage(img,deg,makeThumb=True):
 		os.remove(img)
 		print 'rotation',img
 		return newfilename.replace(startdir,'')
+
 class BroadcastServerProtocol(WebSocketServerProtocol):
     def onOpen(self):
         #print self.__dict__
@@ -110,6 +120,7 @@ class BroadcastServerProtocol(WebSocketServerProtocol):
             # self.factory.broadcast(msg)
             cmd = json.loads(payload)
             if (cmd.has_key("cmd")):
+				print cmd
 				if(cmd.has_key("img")):#grab actual filename if json time was appended
 					oldname = cmd["img"]
 					cmd["img"]=cmd["img"].split('?')[0]
@@ -186,6 +197,10 @@ class BroadcastServerFactory(WebSocketServerFactory):
 		self.tempProbe = TempProbe(self.broadcast)
 		self.tempProbe.start()
 		self.callID=None
+		self.tiltSensor=None
+		if(config['tiltsensor']):
+			self.tiltSensor=tilt.TiltSensor(self.rotateFrame)
+			self.tiltSensor.start()
 		self.tick()
 	def stopProbe():
 		self.tempProbe.setEnabled(False)
@@ -202,6 +217,10 @@ class BroadcastServerFactory(WebSocketServerFactory):
 		print num_files
 		current = random.randint(1, num_files) - 1
 		self.current_img=file_list[current]
+	def rotateFrame(self,data):
+		rotation=data*270
+		self.frameconfig.changeKey('rotation',rotation)
+		self.sendNewConfig(self,all=True)
 	def register(self, client):
 		peer = client.peer
 		client.showcamera=False
